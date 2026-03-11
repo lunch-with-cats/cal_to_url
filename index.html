@@ -31,7 +31,6 @@
             cursor: not-allowed !important;
             box-shadow: none !important;
         }
-        /* 無効状態の入力フィールド用スタイル */
         input:disabled {
             background-color: #f1f3f4 !important;
             color: #9aa0a6 !important;
@@ -39,6 +38,13 @@
             border-color: #e8eaed !important;
         }
         #qrModal { background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
+        
+        /* QRコードのキャンバスをレスポンシブかつ中央寄せにするためのスタイル */
+        #qrCanvas {
+            max-width: 100%;
+            height: auto !important;
+            display: block;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -118,17 +124,18 @@
     </div>
 
     <!-- QR Code Modal -->
-    <div id="qrModal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl text-center max-w-sm w-full">
+    <div id="qrModal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4 sm:p-6">
+        <div class="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl text-center max-w-sm w-full mx-auto">
             <h3 class="text-xl font-bold mb-6 text-gray-800">QRコードをスキャン</h3>
-            <div class="p-4 bg-gray-50 rounded-3xl inline-block mb-8">
-                <canvas id="qrCanvas" class="mx-auto"></canvas>
+            <!-- コンテナを確実に中央寄せにする -->
+            <div class="p-4 bg-gray-50 rounded-3xl flex items-center justify-center mb-8 overflow-hidden mx-auto" style="width: fit-content;">
+                <canvas id="qrCanvas"></canvas>
             </div>
             <div class="grid grid-cols-2 gap-4">
-                <button id="downloadQr" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-4 rounded-2xl transition flex items-center justify-center">
+                <button id="downloadQr" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-4 rounded-2xl transition flex items-center justify-center text-sm">
                     画像保存
                 </button>
-                <button id="closeQr" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition">
+                <button id="closeQr" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition text-sm">
                     閉じる
                 </button>
             </div>
@@ -155,12 +162,11 @@
 
         let mode = 'calendar'; 
 
-        // Initialize with default times
         const init = () => {
             const now = new Date();
             now.setMinutes(0);
-            const start = new Date(now.getTime() + 3600000); // 1 hour later
-            const end = new Date(start.getTime() + 3600000); // +1 hour from start
+            const start = new Date(now.getTime() + 3600000);
+            const end = new Date(start.getTime() + 3600000);
             
             const offset = now.getTimezoneOffset() * 60000;
             startTime.value = new Date(start.getTime() - offset).toISOString().slice(0, 16);
@@ -185,18 +191,14 @@
             document.getElementById('allDaySection').classList.remove('hidden');
             document.getElementById('noDueSection').classList.toggle('hidden', isCal);
             
-            // 期限なしチェック時はグレーアウト、非表示にはしない
             const isDateSectionDisabled = !isCal && noDue;
             startTime.disabled = isDateSectionDisabled;
             startDate.disabled = isDateSectionDisabled;
             
-            // カレンダーモード、またはタスクモードで期限ありの場合のみ日付セクションを表示
-            // ただし、タスクモードで「期限なし」の場合もセクション自体は表示し続ける
             document.getElementById('dateSection').classList.remove('hidden');
             document.getElementById('endTimeSection').classList.toggle('hidden', !isCal);
             document.getElementById('locationSection').classList.toggle('hidden', !isCal);
             
-            // ラベルの不透明度を調整して無効感を出す
             document.getElementById('labelStart').style.opacity = isDateSectionDisabled ? "0.5" : "1";
             
             startTime.classList.toggle('hidden', isAllDay);
@@ -213,7 +215,6 @@
             });
         };
 
-        // Form Helpers
         const toGDate = (dStr, allDay) => {
             const d = new Date(dStr);
             if (isNaN(d.getTime())) return "";
@@ -221,7 +222,6 @@
             return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
         };
 
-        // Add Days Helper
         const addDays = (dStr, days) => {
             const d = new Date(dStr);
             d.setDate(d.getDate() + days);
@@ -275,7 +275,6 @@
             document.body.removeChild(textarea);
         };
 
-        // Event Listeners
         tabCalendar.addEventListener('click', () => { mode = 'calendar'; updateUI(); validate(); });
         tabTask.addEventListener('click', () => { mode = 'task'; updateUI(); validate(); });
 
