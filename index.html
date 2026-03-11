@@ -59,15 +59,22 @@
                     <input type="text" id="eventTitle" placeholder="例：打ち合わせ" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
                 </div>
 
-                <!-- 終日設定 -->
-                <div id="allDaySection" class="flex items-center space-x-2 py-2">
-                    <input type="checkbox" id="allDayCheck" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <label for="allDayCheck" class="text-sm font-semibold text-gray-700 cursor-pointer">終日の予定にする</label>
+                <!-- 設定オプション -->
+                <div class="flex flex-wrap gap-4 py-2">
+                    <div id="allDaySection" class="flex items-center space-x-2">
+                        <input type="checkbox" id="allDayCheck" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <label for="allDayCheck" class="text-sm font-semibold text-gray-700 cursor-pointer">終日の予定にする</label>
+                    </div>
+                    <!-- タスク用：期限なし設定（デフォルトはオフ＝期限あり） -->
+                    <div id="noDueSection" class="hidden flex items-center space-x-2">
+                        <input type="checkbox" id="noDueCheck" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <label for="noDueCheck" class="text-sm font-semibold text-gray-700 cursor-pointer">期限を設定しない</label>
+                    </div>
                 </div>
 
                 <!-- 日時入力 -->
                 <div id="dateSection" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                    <div id="startGroup">
                         <label id="labelStart" class="block text-sm font-semibold text-gray-700 mb-1">開始日時 *</label>
                         <input type="datetime-local" id="startTime" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         <input type="date" id="startDate" class="hidden w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
@@ -114,6 +121,9 @@
         const labelTitle = document.getElementById('labelTitle');
         const labelStart = document.getElementById('labelStart');
         const allDaySection = document.getElementById('allDaySection');
+        const noDueSection = document.getElementById('noDueSection');
+        const noDueCheck = document.getElementById('noDueCheck');
+        const dateSection = document.getElementById('dateSection');
         const endTimeSection = document.getElementById('endTimeSection');
         const locationSection = document.getElementById('locationSection');
 
@@ -163,30 +173,48 @@
 
         function updateUIVisibility() {
             const isAllDay = allDayCheck.checked;
+            const noDue = noDueCheck.checked;
+
             if (mode === 'calendar') {
                 tabCalendar.className = "flex-1 py-3 text-sm font-bold tab-active transition";
                 tabTask.className = "flex-1 py-3 text-sm font-bold text-gray-500 hover:text-blue-600 transition";
                 descriptionText.textContent = "Googleカレンダー登録URLの生成";
                 labelTitle.textContent = "予定のタイトル *";
                 labelStart.textContent = isAllDay ? "開始日 *" : "開始日時 *";
+                
+                allDaySection.classList.remove('hidden');
+                noDueSection.classList.add('hidden');
+                
+                dateSection.classList.remove('hidden');
                 endTimeSection.classList.remove('hidden');
                 locationSection.classList.remove('hidden');
+
+                if (isAllDay) {
+                    endDate.value = startDate.value;
+                }
             } else {
                 tabTask.className = "flex-1 py-3 text-sm font-bold tab-active transition";
                 tabCalendar.className = "flex-1 py-3 text-sm font-bold text-gray-500 hover:text-blue-600 transition";
                 descriptionText.textContent = "Googleタスク追加URLの生成";
                 labelTitle.textContent = "タスク名 *";
+                
+                allDaySection.classList.remove('hidden');
+                noDueSection.classList.remove('hidden');
+                
                 labelStart.textContent = isAllDay ? "期日 *" : "期日と時間 *";
+                
+                // 「期限なし」チェックが入っていれば日付入力を隠す
+                dateSection.classList.toggle('hidden', noDue);
                 endTimeSection.classList.add('hidden');
                 locationSection.classList.add('hidden');
             }
+            
             startTime.classList.toggle('hidden', isAllDay);
-            endTime.classList.toggle('hidden', isAllDay || mode === 'task');
             startDate.classList.toggle('hidden', !isAllDay);
             endDate.classList.toggle('hidden', !isAllDay || mode === 'task');
         }
 
-        // 開始時刻に合わせて終了時刻を1時間後に自動調整
+        // 時間指定：開始時刻に合わせて終了時刻を1時間後に自動調整
         startTime.addEventListener('input', () => {
             if (mode === 'calendar' && !isEndTimeModified && startTime.value) {
                 const newStart = new Date(startTime.value);
@@ -194,7 +222,16 @@
                 endTime.value = formatDateTimeLocal(newEnd);
             }
         });
+
+        // 終日：開始日に合わせて終了日を自動調整
+        startDate.addEventListener('input', () => {
+            if (mode === 'calendar' && !isEndTimeModified && startDate.value) {
+                endDate.value = startDate.value;
+            }
+        });
+
         endTime.addEventListener('focus', () => isEndTimeModified = true);
+        endDate.addEventListener('focus', () => isEndTimeModified = true);
 
         // 入力チェック
         function validateInput() {
@@ -208,9 +245,12 @@
             }
         }
 
-        [eventTitle, allDayCheck, startTime, endTime, startDate, endDate, locationInput, descriptionInput].forEach(el => {
+        [eventTitle, allDayCheck, noDueCheck, startTime, endTime, startDate, endDate, locationInput, descriptionInput].forEach(el => {
             el.addEventListener('input', () => {
-                if (el === allDayCheck) updateUIVisibility();
+                if (el === allDayCheck || el === noDueCheck) {
+                    isEndTimeModified = false; 
+                    updateUIVisibility();
+                }
                 validateInput();
             });
         });
@@ -231,13 +271,14 @@
             const title = eventTitle.value.trim();
             if (!title) return null;
             const isAllDay = allDayCheck.checked;
+            const noDue = noDueCheck.checked;
             
             if (mode === 'calendar') {
                 let startParam, endParam;
                 if (isAllDay) {
                     startParam = startDate.value.replace(/-/g, "");
                     const dEnd = new Date(endDate.value);
-                    dEnd.setDate(dEnd.getDate() + 1); // 終日の終了日は翌日に設定
+                    dEnd.setDate(dEnd.getDate() + 1); 
                     endParam = dEnd.toISOString().slice(0, 10).replace(/-/g, "");
                 } else {
                     startParam = formatToGoogleDate(startTime.value, false);
@@ -252,14 +293,19 @@
                 });
                 return `https://www.google.com/calendar/render?${params.toString()}`;
             } else {
-                const dateVal = isAllDay 
-                    ? startDate.value.replace(/-/g, "") 
-                    : formatToGoogleDate(startTime.value, false);
                 const params = new URLSearchParams({
                     text: title,
-                    notes: descriptionInput.value.trim(),
-                    due: dateVal
+                    notes: descriptionInput.value.trim()
                 });
+                
+                // 「期限なし」チェックが入っていない場合のみ due パラメータを追加
+                if (!noDue) {
+                    const dateVal = isAllDay 
+                        ? startDate.value.replace(/-/g, "") 
+                        : formatToGoogleDate(startTime.value, false);
+                    params.append('due', dateVal);
+                }
+                
                 return `https://tasks.google.com/add?${params.toString()}`;
             }
         }
