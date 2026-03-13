@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Googleカレンダー・タスクURL生成ツール</title>
+    <title>GoogleカレンダーURL生成ツール</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
@@ -20,34 +20,23 @@
             border-bottom: 3px solid #1a73e8;
             color: #1a73e8;
         }
-        input[type="checkbox"] {
-            width: 1.2rem;
-            height: 1.2rem;
-            cursor: pointer;
-        }
         .btn-disabled {
             background-color: #e8eaed !important;
             color: #9aa0a6 !important;
             cursor: not-allowed !important;
             box-shadow: none !important;
         }
-        input:disabled {
-            background-color: #f1f3f4 !important;
-            color: #9aa0a6 !important;
-            cursor: not-allowed;
-            border-color: #e8eaed !important;
-        }
         #qrModal { background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
-        
         #qrCanvas {
             max-width: 100%;
             height: auto !important;
             display: block;
+            image-rendering: pixelated;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div class="max-w-2xl mx-auto">
+    <div id="mainContainer" class="max-w-2xl mx-auto">
         <div class="card p-6 md:p-10">
             <h1 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
                 <span class="mr-3 p-2 bg-blue-50 rounded-xl">📅</span>
@@ -62,27 +51,27 @@
             <p id="descriptionText" class="text-sm text-gray-500 mb-8 px-1">カレンダーに登録するためのリンクを作成します。</p>
 
             <div class="space-y-6">
-                <!-- Title -->
+                <!-- タイトル入力 -->
                 <div>
                     <label id="labelTitle" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">タイトル *</label>
-                    <input type="text" id="eventTitle" placeholder="例：プロジェクト定例会" class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                    <input type="text" id="eventTitle" placeholder="例：プロジェクト定例会" class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 </div>
 
-                <!-- Options -->
+                <!-- オプション設定 -->
                 <div class="flex flex-wrap gap-6 py-2">
                     <div id="allDaySection" class="flex items-center space-x-3">
-                        <input type="checkbox" id="allDayCheck" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        <label for="allDayCheck" class="text-sm font-bold text-gray-700 cursor-pointer">終日の予定</label>
+                        <input type="checkbox" id="allDayCheck" class="w-5 h-5 rounded border-gray-300 text-blue-600">
+                        <label for="allDayCheck" class="text-sm font-bold text-gray-700 cursor-pointer">終日</label>
                     </div>
                     <div id="noDueSection" class="hidden flex items-center space-x-3">
-                        <input type="checkbox" id="noDueCheck" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <input type="checkbox" id="noDueCheck" class="w-5 h-5 rounded border-gray-300 text-blue-600">
                         <label for="noDueCheck" class="text-sm font-bold text-gray-700 cursor-pointer">期限なし</label>
                     </div>
                 </div>
 
-                <!-- Date/Time Picker -->
+                <!-- 日時設定 -->
                 <div id="dateSection" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div id="startGroup">
+                    <div>
                         <label id="labelStart" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">開始日時 *</label>
                         <input type="datetime-local" id="startTime" class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                         <input type="date" id="startDate" class="hidden w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
@@ -94,55 +83,52 @@
                     </div>
                 </div>
 
-                <!-- Optional Fields -->
+                <!-- 場所設定（カレンダーのみ） -->
                 <div id="locationSection">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">場所</label>
                     <input type="text" id="location" placeholder="オンライン、会議室など" class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 </div>
 
+                <!-- メモ設定 -->
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">詳細・メモ</label>
-                    <textarea id="description" rows="3" placeholder="参加者への補足事項" class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"></textarea>
+                    <textarea id="description" rows="3" placeholder="補足事項を入力" class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"></textarea>
                 </div>
 
-                <!-- Action Buttons -->
+                <!-- アクションボタン -->
                 <div class="pt-8 border-t border-gray-100 space-y-4">
-                    <button id="copyBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition duration-200 flex items-center justify-center shadow-lg shadow-blue-200 active:scale-[0.98] btn-disabled" disabled>
-                        <span class="mr-2 text-xl">🔗</span>
-                        URLをコピー
+                    <button id="copyBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition duration-200 flex items-center justify-center shadow-lg shadow-blue-200 btn-disabled" disabled>
+                        🔗 URLをコピー
                     </button>
-                    <button id="qrBtn" class="w-full bg-white border-2 border-gray-200 text-gray-700 hover:bg-gray-50 font-bold py-4 rounded-2xl transition duration-200 flex items-center justify-center active:scale-[0.98] btn-disabled" disabled>
-                        <span class="mr-2 text-xl">📱</span>
-                        QRコードを表示
+                    <!-- QRボタンはカレンダーの時のみ使用 -->
+                    <button id="qrBtn" class="w-full bg-white border-2 border-gray-200 text-gray-700 hover:bg-gray-50 font-bold py-4 rounded-2xl transition duration-200 flex items-center justify-center btn-disabled" disabled>
+                        📱 QRコードを表示
                     </button>
+                    <!-- タスク時の案内テキスト -->
+                    <p id="taskGuide" class="hidden text-xs text-gray-400 text-center leading-relaxed">
+                        ※GoogleタスクはQRコード読み取りに対応していないため、<br>URLをコピーしてブラウザ（Safari等）に貼り付けてください。
+                    </p>
                 </div>
-
-                <div id="statusMessage" class="hidden text-center text-sm font-bold py-4 rounded-xl mt-4 animate-bounce"></div>
+                <div id="statusMessage" class="hidden text-center text-sm font-bold py-4 rounded-xl mt-4"></div>
             </div>
         </div>
     </div>
 
-    <!-- QR Code Modal -->
-    <div id="qrModal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4 sm:p-6">
-        <div class="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl text-center max-w-sm w-full mx-auto">
-            <h3 class="text-xl font-bold mb-6 text-gray-800">QRコードをスキャン</h3>
-            <div class="p-4 bg-gray-50 rounded-3xl flex items-center justify-center mb-8 overflow-hidden mx-auto" style="width: fit-content;">
+    <!-- QRコード用モーダル -->
+    <div id="qrModal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl text-center max-w-sm w-full mx-auto">
+            <h3 class="text-xl font-bold mb-4">カレンダー用QRコード</h3>
+            <div class="p-4 bg-white border border-gray-100 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-inner" style="width: fit-content;">
                 <canvas id="qrCanvas"></canvas>
             </div>
             <div class="grid grid-cols-2 gap-4">
-                <button id="downloadQr" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-4 rounded-2xl transition flex items-center justify-center text-sm">
-                    画像保存
-                </button>
-                <button id="closeQr" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition text-sm">
-                    閉じる
-                </button>
+                <button id="downloadQr" class="bg-gray-100 font-bold py-4 rounded-2xl text-sm hover:bg-gray-200 transition">画像保存</button>
+                <button id="closeQr" class="bg-blue-600 text-white font-bold py-4 rounded-2xl text-sm hover:bg-blue-700 transition">閉じる</button>
             </div>
         </div>
     </div>
 
     <script>
-        const tabCalendar = document.getElementById('tabCalendar');
-        const tabTask = document.getElementById('tabTask');
         const eventTitle = document.getElementById('eventTitle');
         const allDayCheck = document.getElementById('allDayCheck');
         const noDueCheck = document.getElementById('noDueCheck');
@@ -154,63 +140,53 @@
         const descriptionInput = document.getElementById('description');
         const copyBtn = document.getElementById('copyBtn');
         const qrBtn = document.getElementById('qrBtn');
-        const statusMessage = document.getElementById('statusMessage');
         const qrCanvas = document.getElementById('qrCanvas');
-        const downloadQrBtn = document.getElementById('downloadQr');
-
-        let mode = 'calendar'; 
+        const taskGuide = document.getElementById('taskGuide');
+        let mode = 'calendar';
 
         const init = () => {
             const now = new Date();
             now.setMinutes(0);
             const start = new Date(now.getTime() + 3600000);
-            const end = new Date(start.getTime() + 3600000);
-            
             const offset = now.getTimezoneOffset() * 60000;
             startTime.value = new Date(start.getTime() - offset).toISOString().slice(0, 16);
-            endTime.value = new Date(end.getTime() - offset).toISOString().slice(0, 16);
+            endTime.value = new Date(start.getTime() + 7200000 - offset).toISOString().slice(0, 16);
             startDate.value = new Date(start.getTime() - offset).toISOString().slice(0, 10);
             endDate.value = startDate.value;
         };
-
         init();
 
         const updateUI = () => {
-            const isAllDay = allDayCheck.checked;
-            const noDue = noDueCheck.checked;
             const isCal = mode === 'calendar';
-
-            tabCalendar.className = isCal ? "flex-1 py-4 text-sm font-bold tab-active transition-all" : "flex-1 py-4 text-sm font-bold text-gray-400 hover:text-blue-500 transition-all";
-            tabTask.className = !isCal ? "flex-1 py-4 text-sm font-bold tab-active transition-all" : "flex-1 py-4 text-sm font-bold text-gray-400 hover:text-blue-500 transition-all";
+            const isAllDay = allDayCheck.checked;
             
-            document.getElementById('descriptionText').textContent = isCal ? "カレンダーに登録するためのリンクを作成します。" : "タスクリストに追加するためのリンクを作成します。";
-            document.getElementById('labelTitle').textContent = isCal ? "予定のタイトル *" : "タスク名 *";
+            // タブの表示切り替え
+            document.getElementById('tabCalendar').className = isCal ? "flex-1 py-4 text-sm font-bold tab-active" : "flex-1 py-4 text-sm font-bold text-gray-400";
+            document.getElementById('tabTask').className = !isCal ? "flex-1 py-4 text-sm font-bold tab-active" : "flex-1 py-4 text-sm font-bold text-gray-400";
             
-            document.getElementById('allDaySection').classList.remove('hidden');
+            // フォーム項目の表示制御
             document.getElementById('noDueSection').classList.toggle('hidden', isCal);
-            
-            const isDateSectionDisabled = !isCal && noDue;
-            startTime.disabled = isDateSectionDisabled;
-            startDate.disabled = isDateSectionDisabled;
-            
-            document.getElementById('dateSection').classList.remove('hidden');
             document.getElementById('endTimeSection').classList.toggle('hidden', !isCal);
             document.getElementById('locationSection').classList.toggle('hidden', !isCal);
             
-            document.getElementById('labelStart').style.opacity = isDateSectionDisabled ? "0.5" : "1";
-            
+            // QRボタンの表示制御
+            qrBtn.classList.toggle('hidden', !isCal);
+            taskGuide.classList.toggle('hidden', isCal);
+
             startTime.classList.toggle('hidden', isAllDay);
             startDate.classList.toggle('hidden', !isAllDay);
             endTime.classList.toggle('hidden', isAllDay);
             endDate.classList.toggle('hidden', !isAllDay);
+            
+            document.getElementById('labelStart').textContent = isCal ? "開始日時 *" : "期限（日付） *";
+            document.getElementById('descriptionText').textContent = isCal ? "カレンダーに予定を登録するためのリンクを作成します。" : "Googleタスクに追加するためのリンクを作成します。";
         };
 
         const validate = () => {
             const hasTitle = eventTitle.value.trim().length > 0;
-            [copyBtn, qrBtn].forEach(btn => {
-                btn.disabled = !hasTitle;
-                btn.classList.toggle('btn-disabled', !hasTitle);
-            });
+            copyBtn.disabled = qrBtn.disabled = !hasTitle;
+            copyBtn.classList.toggle('btn-disabled', !hasTitle);
+            qrBtn.classList.toggle('btn-disabled', !hasTitle);
         };
 
         const toGDate = (dStr, allDay) => {
@@ -220,118 +196,70 @@
             return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
         };
 
-        const addDays = (dStr, days) => {
-            const d = new Date(dStr);
-            d.setDate(d.getDate() + days);
-            return d.toISOString().slice(0, 10).replace(/-/g, "");
-        };
-
-        const getUrl = () => {
+        const getBaseUrl = () => {
             const title = encodeURIComponent(eventTitle.value.trim());
             const desc = encodeURIComponent(descriptionInput.value.trim());
             const loc = encodeURIComponent(locationInput.value.trim());
-            const isAllDay = allDayCheck.checked;
-            const noDue = noDueCheck.checked;
 
             if (mode === 'calendar') {
-                let dates = "";
-                if (isAllDay) {
-                    const startStr = startDate.value.replace(/-/g, "");
-                    const endStr = addDays(endDate.value, 1);
-                    dates = `${startStr}/${endStr}`;
-                } else {
-                    dates = `${toGDate(startTime.value)}/${toGDate(endTime.value)}`;
-                }
+                const dates = allDayCheck.checked ? 
+                    `${startDate.value.replace(/-/g, "")}/${endDate.value.replace(/-/g, "")}` : 
+                    `${toGDate(startTime.value)}/${toGDate(endTime.value)}`;
                 return `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${desc}&location=${loc}`;
             } else {
-                let url = `https://tasks.google.com/add?text=${title}&notes=${desc}`;
-                if (!noDue) {
-                    const due = isAllDay ? startDate.value.replace(/-/g, "") : toGDate(startTime.value);
+                // タスク用URL (iPhoneブラウザで最も安定して動作する形式)
+                let url = `https://tasks.google.com/add?text=${title}`;
+                if (descriptionInput.value.trim()) url += `&notes=${desc}`;
+                if (!noDueCheck.checked) {
+                    const due = allDayCheck.checked ? startDate.value.replace(/-/g, "") : toGDate(startTime.value);
                     url += `&due=${due}`;
                 }
                 return url;
             }
         };
 
-        const showStatus = (msg) => {
-            statusMessage.textContent = msg;
-            statusMessage.className = "text-blue-600 bg-blue-50 block p-4 rounded-xl mt-4 animate-pulse";
-            setTimeout(() => statusMessage.className = "hidden", 3000);
-        };
-
-        const copyToClipboard = (text) => {
-            const textarea = document.createElement("textarea");
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                showStatus("URLをコピーしました！");
-            } catch (err) {
-                console.error("Copy failed", err);
-            }
-            document.body.removeChild(textarea);
-        };
-
-        tabCalendar.addEventListener('click', () => { mode = 'calendar'; updateUI(); validate(); });
-        tabTask.addEventListener('click', () => { mode = 'task'; updateUI(); validate(); });
-
-        // 開始日時の変更を監視して終了日時を連動させる
-        startTime.addEventListener('change', () => {
-            if (!startTime.value) return;
-            const startD = new Date(startTime.value);
-            const endD = new Date(startD.getTime() + 60 * 60 * 1000); // 1時間後
-            const offset = endD.getTimezoneOffset() * 60000;
-            endTime.value = new Date(endD.getTime() - offset).toISOString().slice(0, 16);
-        });
-
-        startDate.addEventListener('change', () => {
-            endDate.value = startDate.value;
-        });
-
+        document.getElementById('tabCalendar').onclick = () => { mode = 'calendar'; updateUI(); validate(); };
+        document.getElementById('tabTask').onclick = () => { mode = 'task'; updateUI(); validate(); };
+        
         [eventTitle, allDayCheck, noDueCheck, startTime, endTime, startDate, endDate, locationInput, descriptionInput].forEach(el => {
-            el.addEventListener('input', () => {
-                if(el === allDayCheck || el === noDueCheck) updateUI();
-                validate();
-            });
+            el.oninput = () => { if(el.type === 'checkbox') updateUI(); validate(); };
         });
 
-        copyBtn.addEventListener('click', () => copyToClipboard(getUrl()));
+        // URLをコピー
+        copyBtn.onclick = () => {
+            const el = document.createElement("textarea");
+            el.value = getBaseUrl();
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            const msg = document.getElementById('statusMessage');
+            msg.textContent = "URLをコピーしました！";
+            msg.className = "text-blue-600 bg-blue-50 block p-4 rounded-xl mt-4 animate-pulse";
+            setTimeout(() => msg.className = "hidden", 2000);
+        };
 
-        qrBtn.addEventListener('click', () => {
-            const url = getUrl();
-            const size = 300;
-            const qr = new QRious({
+        // QRコード生成（カレンダーのみ）
+        qrBtn.onclick = () => {
+            if (mode !== 'calendar') return;
+            new QRious({
                 element: qrCanvas,
-                value: url,
-                size: size,
-                level: 'H'
+                value: getBaseUrl(),
+                size: 350,
+                level: 'L'
             });
-
-            const ctx = qrCanvas.getContext('2d');
-            ctx.fillStyle = "#FFFFFF";
-            const iconBoxSize = 70;
-            const pos = (size - iconBoxSize) / 2;
-            ctx.beginPath();
-            ctx.roundRect(pos, pos, iconBoxSize, iconBoxSize, 12);
-            ctx.fill();
-
-            ctx.font = "40px serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(mode === 'calendar' ? '📅' : '✅', size / 2, size / 2);
-
             document.getElementById('qrModal').classList.remove('hidden');
-        });
+        };
 
-        downloadQrBtn.addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = `google_share_${Date.now()}.png`;
-            link.href = qrCanvas.toDataURL('image/png');
-            link.click();
-        });
+        document.getElementById('downloadQr').onclick = () => {
+            const a = document.createElement('a');
+            a.download = `calendar_qr_${Date.now()}.png`;
+            a.href = qrCanvas.toDataURL();
+            a.click();
+        };
 
-        document.getElementById('closeQr').addEventListener('click', () => document.getElementById('qrModal').classList.add('hidden'));
+        document.getElementById('closeQr').onclick = () => document.getElementById('qrModal').classList.add('hidden');
         
         updateUI();
         validate();
